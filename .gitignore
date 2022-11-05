@@ -1,4 +1,8 @@
+testconfig.yaml
+
+
 venv/
+cache/
 .vscode
 *.pem
 nohup.out
