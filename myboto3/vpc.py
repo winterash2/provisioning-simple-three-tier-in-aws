@@ -49,10 +49,8 @@ class VPC:
         print("VPC 생성")
 
         # Default Subnet 생성
-        self._subnetPublicDefault01 = Subnet(boto3Interfaces=self._boto3Interfaces, Vpc=self, AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.0.0/24')
-        self._subnetPublicDefault01.createTag(Key='Name', Value='subnet_public_detault_01')
-        self._subnetPublicDefault02 = Subnet(boto3Interfaces=self._boto3Interfaces, Vpc=self, AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.1.0/24')
-        self._subnetPublicDefault02.createTag(Key='Name', Value='subnet_public_detault_02')
+        self._subnetPublicDefault01 = Subnet(boto3Interfaces=self._boto3Interfaces, Vpc=self, AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.0.0/24', Name='subnet_public_detault_01')
+        self._subnetPublicDefault02 = Subnet(boto3Interfaces=self._boto3Interfaces, Vpc=self, AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.1.0/24', Name='subnet_public_detault_02')
 
         # 인터넷 게이트웨이 생성하여 연결
         internet_gateway = self._ec2_client.create_internet_gateway()
@@ -76,12 +74,12 @@ class VPC:
 
         # Public 라우트 테이블 생성
         self._publicRouteTable = RouteTable(boto3Interfaces=self._boto3Interfaces, Vpc=self)
-        self._publicRouteTable.makePublic()
+        self._publicRouteTable.make_public()
         # Private 라우트 테이블 생성
         self._priaveteRouteTable = RouteTable(boto3Interfaces=self._boto3Interfaces, Vpc=self)
         # NAT 라우트 테이블 생성
         self._natRouteTable = RouteTable(boto3Interfaces=self._boto3Interfaces, Vpc=self)
-        self._natRouteTable.makeNat()
+        self._natRouteTable.make_nat()
 
     def delete(self):
         # 라우트 테이블 제거

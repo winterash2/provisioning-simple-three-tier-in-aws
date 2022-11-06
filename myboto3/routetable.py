@@ -38,7 +38,7 @@ class RouteTable:
         )
         return True
 
-    def makePublic(self):
+    def make_public(self):
         response = self._ec2_client.create_route(
             DestinationCidrBlock = '0.0.0.0/0',
             GatewayId = self._Vpc._internetGatewayID,
@@ -46,7 +46,7 @@ class RouteTable:
         )
         return self
 
-    def makeNat(self):
+    def make_nat(self):
         route_private_with_nat = self._ec2_client.create_route(
             DestinationCidrBlock='0.0.0.0/0',
             GatewayId=self._Vpc._natGatewayID,

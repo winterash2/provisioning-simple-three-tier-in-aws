@@ -5,6 +5,7 @@ import yaml
 from myboto3.vpc import VPC
 from myboto3.subnet import Subnet
 from myboto3.routetable import RouteTable
+from myboto3.securitygroup import SecurityGroup
 from myboto3.keypair import KeyPair
 
 # 실행하면서 생성된 변수들에 대한 정보를 저장할 cache 폴더를 생성
@@ -69,29 +70,87 @@ def main():
     if boto3Interfaces == None:
         return 1
 
-    # VPC
+    # VPC 생성
     threeTierVPC = VPC(boto3Interfaces, "10.0.0.0/16")
     
-    
-    KeyPair
+    # KeyPair 생성
     threeTierKeyPair = KeyPair(boto3Interfaces, keyName="defaultKeyPair")
     threeTierKeyPair.create()
 
-    # Subnet
+    # WEB 서브넷 생성
+    subnetPrivateWeb01 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.2.0/24', Name='subnet_private_web_01')
+    subnetPrivateWeb02 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.3.0/24', Name='subnet_private_web_02')
+    subnetPrivateWeb01.make_nat()
+    subnetPrivateWeb02.make_nat()
+    # WAS 서브넷 생성
+    subnetPrivateWas01 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.4.0/24', Name='subnet_private_Was_01')
+    subnetPrivateWas02 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.5.0/24', Name='subnet_private_Was_02')
+    subnetPrivateWas01.make_nat()
+    subnetPrivateWas02.make_nat()
+    # DB 서브넷 생성
+    subnetPrivateDb01 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.6.0/24', Name='subnet_private_Db_01')
+    subnetPrivateDb02 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.7.0/24', Name='subnet_private_Db_02')
+    subnetPrivateDb01.make_private()
+    subnetPrivateDb02.make_private()
+    # WEB LB 서브넷 생성
+    subnetPublicWebLb01 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.6.0/24', Name='subnet_public_WEB_LB_01')
+    subnetPublicWebLb02 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.7.0/24', Name='subnet_public_WEB_LB_02')
+    subnetPublicWebLb01.make_public()
+    subnetPublicWebLb02.make_public()
+    # WAS LB 서브넷 생성
+    subnetPrivateWasLb01 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.6.0/24', Name='subnet_Private_Was_LB_01')
+    subnetPrivateWasLb02 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.7.0/24', Name='subnet_Private_Was_LB_02')
+    subnetPrivateWasLb01.make_private()
+    subnetPrivateWasLb02.make_private()
+
+    # Bastion 보안 그룹 생성
+    bastionSg = SecurityGroup(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, Name='bastionSg')
+    bastionSg.accept_tcp_from_cidr(From=22, To=22, CidrIp='0.0.0.0/0', Description='Accept ssh from all')
+    # WEB LB 보안 그룹 생성
+    webLbSg = SecurityGroup(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, Name='webLbSg')
+    webLbSg.accept_tcp_from_cidr(From=443, To=443, CidrIp="0.0.0.0/0", Description="Accept HTTPS from all")
+    # WEB 보안 그룹 생성
+    webSg = SecurityGroup(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, Name='webSg')
+    webSg.accept_tcp_from_security_group(From=22, To=22, securityGroup=bastionSg, Description="Accept ssh from bastion")
+    webSg.accept_tcp_from_security_group(From=80, To=80, securityGroup=webLbSg, Description="Accept HTTP from WEB LB")
+    # WAS LB 보안 그룹 생성
+    wasLbSg = SecurityGroup(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, Name='wasLbSg')
+    wasLbSg.accept_tcp_from_security_group(From=80, To=80, securityGroup=webSg, Description="Accept HTTP from Web")
+    # WAS 보안 그룹 생성
+    wasSg = SecurityGroup(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, Name='wasSg')
+    wasSg.accept_tcp_from_security_group(From=22, To=22, securityGroup=bastionSg, Description="Accept ssh from bastion")
+    wasSg.accept_tcp_from_security_group(From=80, To=80, securityGroup=wasLbSg, Description="Accept HTTP from WAS LB")
+    # DB(RDS) 보안 그룹 생성
+    dbSg = SecurityGroup(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, Name='dbSg')
+    dbSg.accept_tcp_from_security_group(From=3306, To=3306, securityGroup=wasSg, Description="Accept DB connection from WAS")
+
+    
 
 
 
     print("제거 시작, 아무키나 누를 것")
     input()
-    
+
+    dbSg.delete()
+    wasSg.delete()
+    wasLbSg.delete()
+    webSg.delete()
+    webLbSg.delete()
+    bastionSg.delete()
+
+    subnetPrivateWeb01.delete()
+    subnetPrivateWeb02.delete()
+    subnetPrivateWas01.delete()
+    subnetPrivateWas02.delete()
+    subnetPrivateDb01.delete()
+    subnetPrivateDb02.delete()
+    subnetPublicWebLb01.delete()
+    subnetPublicWebLb02.delete()
+    subnetPrivateWasLb01.delete()
+    subnetPrivateWasLb02.delete()
+
     threeTierVPC.delete()
     threeTierKeyPair.delete()
-
-
-
-
-
-
 
 
 
