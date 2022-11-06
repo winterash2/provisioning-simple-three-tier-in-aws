@@ -7,6 +7,7 @@ from myboto3.subnet import Subnet
 from myboto3.routetable import RouteTable
 from myboto3.securitygroup import SecurityGroup
 from myboto3.keypair import KeyPair
+from myboto3.rds import RDS
 
 # 실행하면서 생성된 변수들에 대한 정보를 저장할 cache 폴더를 생성
 def createCacheFoler():
@@ -93,13 +94,13 @@ def main():
     subnetPrivateDb01.make_private()
     subnetPrivateDb02.make_private()
     # WEB LB 서브넷 생성
-    subnetPublicWebLb01 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.6.0/24', Name='subnet_public_WEB_LB_01')
-    subnetPublicWebLb02 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.7.0/24', Name='subnet_public_WEB_LB_02')
+    subnetPublicWebLb01 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.8.0/24', Name='subnet_public_WEB_LB_01')
+    subnetPublicWebLb02 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.9.0/24', Name='subnet_public_WEB_LB_02')
     subnetPublicWebLb01.make_public()
     subnetPublicWebLb02.make_public()
     # WAS LB 서브넷 생성
-    subnetPrivateWasLb01 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.6.0/24', Name='subnet_Private_Was_LB_01')
-    subnetPrivateWasLb02 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.7.0/24', Name='subnet_Private_Was_LB_02')
+    subnetPrivateWasLb01 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.10.0/24', Name='subnet_Private_Was_LB_01')
+    subnetPrivateWasLb02 = Subnet(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.11.0/24', Name='subnet_Private_Was_LB_02')
     subnetPrivateWasLb01.make_private()
     subnetPrivateWasLb02.make_private()
 
@@ -124,35 +125,23 @@ def main():
     dbSg = SecurityGroup(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, Name='dbSg')
     dbSg.accept_tcp_from_security_group(From=3306, To=3306, securityGroup=wasSg, Description="Accept DB connection from WAS")
 
-    
+    # # RDS 생성
+    # rdsMysql = RDS(boto3Interfaces=boto3Interfaces, Vpc=threeTierVPC, DBName="threetier", Subnets=[subnetPrivateDb01, subnetPrivateDb02], SecurityGroups=[dbSg], DBEngine="mysql", Version=globalConfig['MySQLVersion'])
 
-
-
-    print("제거 시작, 아무키나 누를 것")
-    input()
-
-    dbSg.delete()
-    wasSg.delete()
-    wasLbSg.delete()
-    webSg.delete()
-    webLbSg.delete()
-    bastionSg.delete()
-
-    subnetPrivateWeb01.delete()
-    subnetPrivateWeb02.delete()
-    subnetPrivateWas01.delete()
-    subnetPrivateWas02.delete()
-    subnetPrivateDb01.delete()
-    subnetPrivateDb02.delete()
-    subnetPublicWebLb01.delete()
-    subnetPublicWebLb02.delete()
-    subnetPrivateWasLb01.delete()
-    subnetPrivateWasLb02.delete()
-
-    threeTierVPC.delete()
-    threeTierKeyPair.delete()
-
-
+    print("1. 모든 자원 제거")
+    print("2. 프로그램 종료(모든 자원을 수동으로 제거해야 합니다.")
+    print("입력: ")
+    select = input()
+    if select == '1':
+        # rdsMysql.delete()
+        threeTierVPC.delete_all()
+        threeTierKeyPair.delete()
+    elif select == '2':
+        pass
+    else:
+        # rdsMysql.delete()
+        threeTierVPC.delete_all()
+        threeTierKeyPair.delete()
 
 if __name__ == "__main__":
     main()

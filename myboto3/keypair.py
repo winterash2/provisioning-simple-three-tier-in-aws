@@ -27,10 +27,12 @@ class KeyPair:
             keypair_file = open(self._keyName+'.pem', 'w')
             keypair_file.write(str(key_pair.key_material))
             keypair_file.close()
-        except:
-            print("Unexpected error:", sys.exc_info())
-            return False
-        return True
+        except botocore.exceptions.ClientError as err:
+            if err.response['Error']['Code'] == 'InvalidKeyPair.Duplicate':
+                print(self._keyName, " 키를 소유하고 있습니다. 해당 키를 사용해주시기 바랍니다.")
+            else:
+                print("KeyPair 생성 중 알 수 없는 에러가 발생했습니다.")
+                raise
     
     def delete(self):
         try:

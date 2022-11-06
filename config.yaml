@@ -5,6 +5,11 @@ ACCESS_KEY: AAAAAAAAAAAAAAAAAAAA
 SECRET_KEY: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 AWS_REGION_NAME: ap-northeast-2
 
+## 키페어 이름
+KEYPAIR_NAME: defaultKeyPair
+
 ## RDS
-### 사용 가능한 MySQL 버전은 8.0.23, 8.0.25, 8.0.26, 8.0.27, 8.0.28, 8.0.30 임
+### 사용 가능한 MySQL 버전은 8.0.23, 8.0.25, 8.0.26, 8.0.27, 8.0.28, 8.0.30 입니다.
+### 이 중 하나를 선택하여 입력해주시기 바랍니다.
 MySQLVersion: 8.0.23 
+

@@ -35,23 +35,33 @@ class Subnet:
         self._CidrBlock = CidrBlock
         self._ec2_client = boto3Interfaces['ec2_client']
         self._ec2_resource = boto3Interfaces['ec2_resource']
-        self._id = None
         self._Tags = []
         self._Name = Name
 
-        print("Subnet 생성", AvailabilityZone, CidrBlock)
+        print("Subnet 생성", self._Name, AvailabilityZone, CidrBlock)
 
         vpc_client = self._ec2_resource.Vpc(self._Vpc._id)
         response = vpc_client.create_subnet(
             AvailabilityZone = self._AvailabilityZone, 
             CidrBlock = self._CidrBlock
         )
-        response = self._ec2_client.create_tags(
-            Resources = [self._id],
-            Tags = [{'Key': 'Name', "Value": Name}],
-        )
-
         self._id = response.id
+        self.create_tag(Key='Name', Value=self._Name)
+    
+    def create_tag(self, Key, Value):
+        try:
+            response = self._ec2_client.create_tags(
+                Resources = [self._id],
+                Tags = [
+                    {
+                        'Key': Key, 
+                        "Value": Value
+                    }
+                ],
+            )
+        except:
+            print("알 수 없는 에러가 발생했습니다. 모든 자원을 수동으로 제거해주시기 바랍니다.")
+            raise
 
     def delete(self):
         response = self._ec2_client.delete_subnet(

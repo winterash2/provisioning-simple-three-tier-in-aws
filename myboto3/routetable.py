@@ -26,8 +26,6 @@ class RouteTable:
         self._Vpc = Vpc
         self._ec2_resource = boto3Interfaces['ec2_resource']
         self._ec2_client = boto3Interfaces['ec2_client']
-
-        print("라우트 테이블 생성")
         
         response = self._ec2_resource.create_route_table(VpcId=self._Vpc._id,)
         self._id = response.id
