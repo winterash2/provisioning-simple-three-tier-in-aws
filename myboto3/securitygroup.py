@@ -22,14 +22,14 @@ class SecurityGroup:
         response = self._ec2_resource.create_security_group(
             Description=Name,
             GroupName=Name,
-            VpcId=self._Vpc._id
+            VpcId=self._Vpc.id
         )
-        self._id = response.id
-        self._sg_client = self._ec2_resource.SecurityGroup(self._id)
+        self.id = response.id
+        self._sg_client = self._ec2_resource.SecurityGroup(self.id)
     
     def delete(self):
         self._ec2_client.delete_security_group(
-            GroupId=self._id,
+            GroupId=self.id,
         )
 
     def accept_tcp_from_cidr(self, From, To, CidrIp, Description):
@@ -58,7 +58,7 @@ class SecurityGroup:
                     'ToPort': To,
                     "UserIdGroupPairs": [
                         {
-                            'GroupId': securityGroup._id, 
+                            'GroupId': securityGroup.id, 
                             'Description': Description
                         }
                     ]

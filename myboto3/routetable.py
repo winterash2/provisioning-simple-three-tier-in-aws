@@ -27,12 +27,12 @@ class RouteTable:
         self._ec2_resource = boto3Interfaces['ec2_resource']
         self._ec2_client = boto3Interfaces['ec2_client']
         
-        response = self._ec2_resource.create_route_table(VpcId=self._Vpc._id,)
+        response = self._ec2_resource.create_route_table(VpcId=self._Vpc.id,)
         self._id = response.id
     
     def delete(self):
         response = self._ec2_client.delete_route_table(
-            RouteTableId=self._id
+            RouteTableId=self.id
         )
         return True
 
@@ -40,7 +40,7 @@ class RouteTable:
         response = self._ec2_client.create_route(
             DestinationCidrBlock = '0.0.0.0/0',
             GatewayId = self._Vpc._internetGatewayID,
-            RouteTableId = self._id,
+            RouteTableId = self.id,
         )
         return self
 
@@ -48,6 +48,6 @@ class RouteTable:
         route_private_with_nat = self._ec2_client.create_route(
             DestinationCidrBlock='0.0.0.0/0',
             GatewayId=self._Vpc._natGatewayID,
-            RouteTableId=self._id,
+            RouteTableId=self.id,
         )
         return self

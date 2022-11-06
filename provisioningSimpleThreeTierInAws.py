@@ -58,7 +58,7 @@ def createBoto3Interfaces(globalConfig):
 
 # config.yaml에 입력되어 있는 설정값들 로드
 def loadConfigFile():
-    with open('testconfig.yaml') as f:
+    with open('config.yaml') as f:
         globalConfig = yaml.safe_load(f)
     return globalConfig
 

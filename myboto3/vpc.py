@@ -140,7 +140,7 @@ class VPC:
         try:
             self._ec2_client.detach_internet_gateway(
                 InternetGatewayId=self._internetGatewayID,
-                VpcId=self._id
+                VpcId=self.id
             )
             time.sleep(10)
             self._ec2_client.delete_internet_gateway(
@@ -203,12 +203,14 @@ class VPC:
         while not is_removed:
             try:
                 response = self._ec2_client.delete_vpc(
-                    VpcId=self._id,
+                    VpcId=self.id,
                 )
                 is_removed = True
             except botocore.exceptions.ClientError as err:
                 print(err.response['Error']['Code'])
                 print("VPC 제거중입니다. 10번 이상 메시지가 반복되면 프로그램을 종료하고 수동으로 제거 부탁드립니다.")
+                print("VPC가 콘솔에서는 잘 지워지지만 boto3 API로는 계속 DependencyViolation 에러가 발생하는 현상이 있습니다. 가급적 프로그램을 종료하고 콘솔에서 제거해주시기 바랍니다.")
+                print("VPC ID =", self.id)
                 time.sleep(60)
             except Exception as err:
                 print("알 수 없는 이유로 VPC가 제거되지 않습니다. 모든 자원을 수동으로 제거해주시기 바랍니다.")

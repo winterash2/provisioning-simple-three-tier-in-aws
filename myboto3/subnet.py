@@ -40,7 +40,7 @@ class Subnet:
 
         print("Subnet 생성", self._Name, AvailabilityZone, CidrBlock)
 
-        vpc_client = self._ec2_resource.Vpc(self._Vpc._id)
+        vpc_client = self._ec2_resource.Vpc(self._Vpc.id)
         response = vpc_client.create_subnet(
             AvailabilityZone = self._AvailabilityZone, 
             CidrBlock = self._CidrBlock
@@ -51,7 +51,7 @@ class Subnet:
     def create_tag(self, Key, Value):
         try:
             response = self._ec2_client.create_tags(
-                Resources = [self._id],
+                Resources = [self.id],
                 Tags = [
                     {
                         'Key': Key, 
@@ -65,23 +65,23 @@ class Subnet:
 
     def delete(self):
         response = self._ec2_client.delete_subnet(
-            SubnetId=self._id, # subnet_private_was_lb_01
+            SubnetId=self.id, # subnet_private_was_lb_01
         )
 
     def make_public(self):
         response = self._ec2_client.associate_route_table(
-            RouteTableId=self._Vpc._publicRouteTable._id,
-            SubnetId=self._id,
+            RouteTableId=self._Vpc._publicRouteTable.id,
+            SubnetId=self.id,
         )
     
     def make_private(self):
         response = self._ec2_client.associate_route_table(
-            RouteTableId=self._Vpc._priaveteRouteTable._id,
-            SubnetId=self._id,
+            RouteTableId=self._Vpc._priaveteRouteTable.id,
+            SubnetId=self.id,
         )
 
     def make_nat(self):
         response = self._ec2_client.associate_route_table(
-            RouteTableId=self._Vpc._natRouteTable._id,
-            SubnetId=self._id,
+            RouteTableId=self._Vpc._natRouteTable.id,
+            SubnetId=self.id,
         )
