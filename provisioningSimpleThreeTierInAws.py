@@ -3,6 +3,7 @@ import botocore
 import boto3
 import yaml
 from myboto3.vpc import VPC
+from myboto3.keypair import KeyPair
 
 # 실행하면서 생성된 변수들에 대한 정보를 저장할 cache 폴더를 생성
 def createCacheFoler():
@@ -66,19 +67,23 @@ def main():
     if boto3Interfaces == None:
         return 1
 
+    # VPC
     threeTierVPC = VPC(boto3Interfaces, "10.0.0.0/16")
-    threeTierVPC_id = threeTierVPC.create_vpc()
+    threeTierVPC.create()
     
+    # KeyPair
+    threeTierKeyPair = KeyPair(boto3Interfaces, keyName="defaultKeyPair")
+    threeTierKeyPair.create()
+
+    # Subnet
+
+
 
     print("제거 시작, 아무키나 누를 것")
     input()
     
-    threeTierVPC.delete_vpc()
-    
-
-
-
-
+    threeTierVPC.delete()
+    threeTierKeyPair.delete()
 
 
 

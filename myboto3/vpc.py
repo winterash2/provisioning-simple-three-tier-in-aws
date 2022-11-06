@@ -42,7 +42,7 @@ class VPC:
         self._id = None
     
     # VPC 생성. 옵션값을 함수 인자로 받지 않고, setter를 이용하여 설정해야 함
-    def create_vpc(self):
+    def create(self):
         try:
             response = self._ec2_resource.create_vpc(
                 CidrBlock = self._CidrBlock,
@@ -74,7 +74,7 @@ class VPC:
             print("Unexpected error:", sys.exc_info())
             return False
 
-    def delete_vpc(self):
+    def delete(self):
         if self._id == None:
             print("생성되어 있지 않은 자원입니다.")
         else:
