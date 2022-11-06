@@ -22,54 +22,6 @@ ec2_resource = session.resource('ec2', config=my_config)
 ec2_client = session.client('ec2', config=my_config)
 
 
-# VPC 생성
-vpc = ec2_resource.create_vpc(CidrBlock='10.0.0.0/16')
-    #### ec2.Vpc(id='vpc-0b9e49caee88ff459')
-resource_ids['vpc']=vpc.id
-# VPC 생성 완료
-
-# KeyPair 생성
-KEYPAIR_NAME = "keypair"
-keypair_file = open('keypair.pem', 'w')
-key_pair = ec2_resource.create_key_pair(KeyName=KEYPAIR_NAME)
-keypair_file.write(str(key_pair.key_material))
-keypair_file.close()
-# KeyPair 생성 완료
-
-# Internet Gateway 생성
-internet_gateway = ec2_client.create_internet_gateway()
-    #### {'InternetGateway': {'Attachments': [], 'InternetGatewayId': 'igw-0d7338a164935b4c5', 'OwnerId': '999822656998', 'Tags': []}, 'ResponseMetadata': {'RequestId': '500602d4-a3cb-48ce-9623-c2857c2f7ae1', 'HTTPStatusCode': 200, 'HTTPHeaders': {'x-amzn-requestid': '500602d4-a3cb-48ce-9623-c2857c2f7ae1', 'cache-control': 'no-cache, no-store', 'strict-transport-security': 'max-age=31536000; includeSubDomains', 'content-type': 'text/xml;charset=UTF-8', 'content-length': '437', 'date': 'Tue, 01 Nov 2022 07:53:33 GMT', 'server': 'AmazonEC2'}, 'RetryAttempts': 0}}
-resource_ids['internet_gateway'] = internet_gateway['InternetGateway']['InternetGatewayId']
-igw = vpc.attach_internet_gateway(InternetGatewayId=resource_ids['internet_gateway'])
-# Internet Gateway 생성 완료
-
-# Subnet 생성
-## Default Subnet 생성
-subnet_public_detault_01 = vpc.create_subnet(AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.0.0/24')
-response = ec2_client.create_tags(Resources=[subnet_public_detault_01.id,],Tags=[{'Key': 'Name','Value': 'subnet_public_detault_01',},],)
-resource_ids['subnet_public_detault_01'] = subnet_public_detault_01.id
-subnet_public_detault_02 = vpc.create_subnet(AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.1.0/24')
-response = ec2_client.create_tags(Resources=[subnet_public_detault_02.id,],Tags=[{'Key': 'Name','Value': 'subnet_public_detault_02',},],)
-resource_ids['subnet_public_detault_02'] = subnet_public_detault_02.id
-### Public 라우트 테이블 생성
-route_table_public = ec2_resource.create_route_table(VpcId=resource_ids['vpc'],)
-resource_ids['route_table_public'] = route_table_public.id
-# Public 라우트 테이블에 0.0.0.0/0 -> Internet Gateway 룰 추가
-route_public = ec2_client.create_route(
-    DestinationCidrBlock='0.0.0.0/0',
-    GatewayId=resource_ids['internet_gateway'],
-    RouteTableId=resource_ids['route_table_public'],
-)
-# Public 라우트 테이블을 Default subnet에 연결
-response = ec2_client.associate_route_table(
-    RouteTableId=resource_ids['route_table_public'],
-    SubnetId=resource_ids['subnet_public_detault_01'],
-)
-response = ec2_client.associate_route_table(
-    RouteTableId=resource_ids['route_table_public'],
-    SubnetId=resource_ids['subnet_public_detault_02'],
-)
-
 ## DB 서브넷 생성
 subnet_private_db_01 = vpc.create_subnet(AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.6.0/24')
 response = ec2_client.create_tags(Resources=[subnet_private_db_01.id,],Tags=[{'Key': 'Name','Value': 'subnet_private_db_01',},],)
@@ -114,26 +66,7 @@ resource_ids['subnet_private_web_01'] = subnet_private_web_01.id
 subnet_private_web_02 = vpc.create_subnet(AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.3.0/24')
 response = ec2_client.create_tags(Resources=[subnet_private_web_02.id,],Tags=[{'Key': 'Name','Value': 'subnet_private_web_02',},],)
 resource_ids['subnet_private_web_02'] = subnet_private_web_02.id
-### NAT Gateway 생성
-#### EIP 생성
-nat_eip = ec2_client.allocate_address(Domain='vpc')
-resource_ids['nat_eip_allocation_id'] = nat_eip['AllocationId']
-#### NAT Gateway 생성
-nat_gateway = ec2_client.create_nat_gateway(
-    SubnetId=resource_ids['subnet_public_detault_02'],
-    ConnectivityType='public',
-    AllocationId=resource_ids['nat_eip_allocation_id']
-)
-resource_ids['nat_gateway'] = nat_gateway['NatGateway']['NatGatewayId']
-### Private with Nat 서브넷에 연결할 Route Table 생성
-route_table_private_with_nat = ec2_resource.create_route_table(VpcId=resource_ids['vpc'],)
-resource_ids['route_table_private_with_nat'] = route_table_private_with_nat.id
-### Private with NAT 라우트 테이블에 0.0.0.0/0 -> NAT 룰 추가
-route_private_with_nat = ec2_client.create_route(
-    DestinationCidrBlock='0.0.0.0/0',
-    GatewayId=resource_ids['nat_gateway'],
-    RouteTableId=resource_ids['route_table_private_with_nat'],
-)
+
 ### 생성한 Private with NAT 라우트 테이블을 WEB 서브넷에 연결
 response = ec2_client.associate_route_table(
     RouteTableId=resource_ids['route_table_private_with_nat'],
@@ -151,7 +84,6 @@ resource_ids['subnet_private_was_lb_01'] = subnet_private_was_lb_01.id
 subnet_private_was_lb_02 = vpc.create_subnet(AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.11.0/24')
 response = ec2_client.create_tags(Resources=[subnet_private_was_lb_02.id,],Tags=[{'Key': 'Name','Value': 'subnet_private_was_lb_02',},],)
 resource_ids['subnet_private_was_lb_02'] = subnet_private_was_lb_02.id
-
 ### Private 라우트 테이블을 WAS LB 서브넷에 연결
 response = ec2_client.associate_route_table(
     RouteTableId=resource_ids['route_table_private'],

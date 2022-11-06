@@ -1,30 +1,29 @@
 import sys
 import botocore
 import boto3
+from myboto3.subnet import Subnet
+from myboto3.routetable import RouteTable
 
 class VPC:
     '''
-    Request
-        CidrBlock='string',
-        AmazonProvidedIpv6CidrBlock=True|False,
-        Ipv6Pool='string',
-        Ipv6CidrBlock='string',
-        Ipv4IpamPoolId='string',
-        Ipv4NetmaskLength=123,
-        Ipv6IpamPoolId='string',
-        Ipv6NetmaskLength=123,
-        DryRun=True|False,
-        InstanceTenancy='default'|'dedicated'|'host',
-        Ipv6CidrBlockNetworkBorderGroup='string',
-        # Tag Specifier 생략
-    Response
-        ec2.Vpc(id='vpc-048ea590fff96db18')
-    
-    Cretae VPC
-        vpc = ec2_resource.create_vpc(CidrBlock='10.0.1.0/24', DryRun=True)
-        #### ec2.Vpc(id='vpc-0b9e49caee88ff459')
-        resource_ids['vpc']=vpc.id
+        _id
+        _CidrBlock
+        _subnetPublicDefault01
+        _subnetPublicDefault02
+        _internetGatewayID
+        _natGatewayID
+        _publicRouteTable
+        _priaveteRouteTable
+        _natRouteTable
     '''
+
+    @property
+    def id(self):
+        return self._id
+    
+    @id.setter
+    def id(self, value):
+        self._id = value
 
     @property
     def CidrBlock(self):
@@ -37,55 +36,83 @@ class VPC:
     # 클래스 생성 시 호출되는 초기화 함수, boto3Interfaces를 통해 미리 생성한 ec2_clinet를 전달받음
     def __init__(self, boto3Interfaces, CidrBlock = '10.0.0.0/16'):
         self._CidrBlock = CidrBlock # Boto3의 옵션과 혼동되지 않도록 네이밍을 동일하게 함
+        self._boto3Interfaces = boto3Interfaces
         self._ec2_resource = boto3Interfaces['ec2_resource']
         self._ec2_client = boto3Interfaces['ec2_client']
         self._id = None
-    
-    # VPC 생성. 옵션값을 함수 인자로 받지 않고, setter를 이용하여 설정해야 함
-    def create(self):
-        try:
-            response = self._ec2_resource.create_vpc(
-                CidrBlock = self._CidrBlock,
-                # AmazonProvidedIpv6CidrBlock=True|False,
-                # Ipv6Pool='string',
-                # Ipv6CidrBlock='string',
-                # Ipv4IpamPoolId='string',
-                # Ipv4NetmaskLength=123,
-                # Ipv6IpamPoolId='string',
-                # Ipv6NetmaskLength=123,
-                # DryRun=True|False,
-                # InstanceTenancy='default'|'dedicated'|'host',
-                # Ipv6CidrBlockNetworkBorderGroup='string',
-                # TagSpecifications=[
-                #     {
-                #         'ResourceType': 'capacity-reservation'|'client-vpn-endpoint'|'customer-gateway'|'carrier-gateway'|'coip-pool'|'dedicated-host'|'dhcp-options'|'egress-only-internet-gateway'|'elastic-ip'|'elastic-gpu'|'export-image-task'|'export-instance-task'|'fleet'|'fpga-image'|'host-reservation'|'image'|'import-image-task'|'import-snapshot-task'|'instance'|'instance-event-window'|'internet-gateway'|'ipam'|'ipam-pool'|'ipam-scope'|'ipv4pool-ec2'|'ipv6pool-ec2'|'key-pair'|'launch-template'|'local-gateway'|'local-gateway-route-table'|'local-gateway-virtual-interface'|'local-gateway-virtual-interface-group'|'local-gateway-route-table-vpc-association'|'local-gateway-route-table-virtual-interface-group-association'|'natgateway'|'network-acl'|'network-interface'|'network-insights-analysis'|'network-insights-path'|'network-insights-access-scope'|'network-insights-access-scope-analysis'|'placement-group'|'prefix-list'|'replace-root-volume-task'|'reserved-instances'|'route-table'|'security-group'|'security-group-rule'|'snapshot'|'spot-fleet-request'|'spot-instances-request'|'subnet'|'subnet-cidr-reservation'|'traffic-mirror-filter'|'traffic-mirror-session'|'traffic-mirror-target'|'transit-gateway'|'transit-gateway-attachment'|'transit-gateway-connect-peer'|'transit-gateway-multicast-domain'|'transit-gateway-policy-table'|'transit-gateway-route-table'|'transit-gateway-route-table-announcement'|'volume'|'vpc'|'vpc-endpoint'|'vpc-endpoint-connection'|'vpc-endpoint-service'|'vpc-endpoint-service-permission'|'vpc-peering-connection'|'vpn-connection'|'vpn-gateway'|'vpc-flow-log'|'capacity-reservation-fleet'|'traffic-mirror-filter-rule'|'vpc-endpoint-connection-device-type'|'vpn-connection-device-type',
-                #         'Tags': [
-                #             {
-                #                 'Key': 'string',
-                #                 'Value': 'string'
-                #             },
-                #         ]
-                #     },
-                # ]
-            )
-            self._id = response.id
-            return self._id
-        except:
-            print("Unexpected error:", sys.exc_info())
-            return False
+
+        threetierVpc = self._ec2_resource.create_vpc(
+            CidrBlock = self._CidrBlock,
+        )
+        self._id = threetierVpc.id
+
+        print("VPC 생성")
+
+        # Default Subnet 생성
+        self._subnetPublicDefault01 = Subnet(boto3Interfaces=self._boto3Interfaces, Vpc=self, AvailabilityZone='ap-northeast-2a', CidrBlock='10.0.0.0/24')
+        self._subnetPublicDefault01.createTag(Key='Name', Value='subnet_public_detault_01')
+        self._subnetPublicDefault02 = Subnet(boto3Interfaces=self._boto3Interfaces, Vpc=self, AvailabilityZone='ap-northeast-2c', CidrBlock='10.0.1.0/24')
+        self._subnetPublicDefault02.createTag(Key='Name', Value='subnet_public_detault_02')
+
+        # 인터넷 게이트웨이 생성하여 연결
+        internet_gateway = self._ec2_client.create_internet_gateway()
+        self._internetGatewayID = internet_gateway['InternetGateway']['InternetGatewayId']
+        response = threetierVpc.attach_internet_gateway(InternetGatewayId=self._internetGatewayID)
+
+        # NAT 게이트웨이 생성
+        ## EIP 생성
+        nat_eip = self._ec2_client.allocate_address(Domain='vpc')
+        self._natEipId = nat_eip['AllocationId']
+        #### NAT Gateway 생성
+        response = self._ec2_client.create_nat_gateway(
+            SubnetId=self._subnetPublicDefault01.id,
+            ConnectivityType='public',
+            AllocationId=self._natEipId
+        )
+        self._natGatewayID = response['NatGateway']['NatGatewayId']
+        
+        print("NAT 게이트웨이 생성이 완료될때까지 기다려주세요. 계속하시려면 Enter를 입력하시오")
+        input()
+
+        # Public 라우트 테이블 생성
+        self._publicRouteTable = RouteTable(boto3Interfaces=self._boto3Interfaces, Vpc=self)
+        self._publicRouteTable.makePublic()
+        # Private 라우트 테이블 생성
+        self._priaveteRouteTable = RouteTable(boto3Interfaces=self._boto3Interfaces, Vpc=self)
+        # NAT 라우트 테이블 생성
+        self._natRouteTable = RouteTable(boto3Interfaces=self._boto3Interfaces, Vpc=self)
+        self._natRouteTable.makeNat()
 
     def delete(self):
-        if self._id == None:
-            print("생성되어 있지 않은 자원입니다.")
-        else:
-            try:
-                response = self._ec2_client.delete_vpc(
-                    VpcId=self._id,
-                )
-                print("VPC 정상적으로 삭제하였습니다.")
-                return True
-            except:
-                print("Unexpected error:", sys.exc_info())
-                return False
+        # 라우트 테이블 제거
+        self._natRouteTable.delete()
+        self._priaveteRouteTable.delete()
+        self._publicRouteTable.delete()
+        # Nat 게이트웨이 제거 및 연결된 EIP 제거
+        self._ec2_client.delete_nat_gateway(
+            NatGatewayId=self._natGatewayID
+        )
+        print("NAT 게이트웨이 제거가 완료될때까지 기다려주세요. 계속하시려면 Enter를 입력하시오")
+        input()
+        self._ec2_client.release_address(
+            AllocationId=self._natEipId,
+        )
+
+        # Internet Gateway를 VPC에서 분리 및 제거
+        self._ec2_client.detach_internet_gateway(
+            InternetGatewayId=self._internetGatewayID,
+            VpcId=self._id
+        )
+        self._ec2_client.delete_internet_gateway(
+            InternetGatewayId=self._internetGatewayID
+        )
+        # Default 서브넷 제거
+        self._subnetPublicDefault01.delete()
+        self._subnetPublicDefault02.delete()
+
+        response = self._ec2_client.delete_vpc(
+            VpcId=self._id,
+        )
+        print("VPC 정상적으로 삭제하였습니다.")
         return True
     

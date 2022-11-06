@@ -3,6 +3,8 @@ import botocore
 import boto3
 import yaml
 from myboto3.vpc import VPC
+from myboto3.subnet import Subnet
+from myboto3.routetable import RouteTable
 from myboto3.keypair import KeyPair
 
 # 실행하면서 생성된 변수들에 대한 정보를 저장할 cache 폴더를 생성
@@ -69,9 +71,9 @@ def main():
 
     # VPC
     threeTierVPC = VPC(boto3Interfaces, "10.0.0.0/16")
-    threeTierVPC.create()
     
-    # KeyPair
+    
+    KeyPair
     threeTierKeyPair = KeyPair(boto3Interfaces, keyName="defaultKeyPair")
     threeTierKeyPair.create()
 

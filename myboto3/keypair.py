@@ -4,12 +4,7 @@ import boto3
 
 class KeyPair:
     '''
-    Create
-        KEYPAIR_NAME = "keypair"
-        keypair_file = open('keypair.pem', 'w')
-        key_pair = ec2_resource.create_key_pair(KeyName=KEYPAIR_NAME)
-        keypair_file.write(str(key_pair.key_material))
-        keypair_file.close()
+        _keyName
     '''
 
     @property
