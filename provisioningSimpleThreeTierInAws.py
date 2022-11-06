@@ -9,6 +9,8 @@ from myboto3.securitygroup import SecurityGroup
 from myboto3.keypair import KeyPair
 from myboto3.rds import RDS
 
+global globalConfig
+
 # 실행하면서 생성된 변수들에 대한 정보를 저장할 cache 폴더를 생성
 def createCacheFoler():
     try:
@@ -61,6 +63,7 @@ def loadConfigFile():
     return globalConfig
 
 def main():
+    global globalConfig
     globalConfig = loadConfigFile()
 
     # 실행을 시작하기 전 환경 구성 및 검증
