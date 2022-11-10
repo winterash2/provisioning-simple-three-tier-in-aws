@@ -81,11 +81,14 @@ from simpleboto3 import SimpleBoto3
 # 사용할 때 role arn으로 role에 대한 권한을 얻어서 사용함. 그래서 만약 ec2와 s3를 각각 사용할 수 있는 role을 두 개 부여받았을 때, 
 # 그냥 권한을 넣어줬을 때는 2개를 조합해서도 쓰고 그럴 수 있지만, assumeRole을 사용할 경우에는 그게 불가능할 것 같음.
 
+
 def _parse_configure():
     pass
 
+
 def _parse_vpc():
     pass
+
 
 # 일단 kubectl처럼 사용할 수 있게끔 구현을 하려고 함. (구현할 때 단위테스트에 더 편리하고 확장성도 높다고 생각함)
 # 그리고 3 Tier 구성을 하는건 별도의 파이썬 코드를 짜거나(kubectl 처럼 쓸 수 있게 만들어놓은 메서드들 사용) 
@@ -96,6 +99,92 @@ def _parse(argvs):
     if argvs[0].lower() == 'vpc':
         _parse_vpc(argvs[1:])
 
+
+def _get_sts_session():
+    '''
+    https://tech.cloud.nongshim.co.kr/2021/03/12/boto3%EA%B0%80-aws%EC%9D%98-%EC%9E%90%EA%B2%A9%EC%A6%9D%EB%AA%85credentials%EC%9D%84-%ED%99%95%EC%9D%B8%ED%95%98%EB%8A%94-%EC%88%9C%EC%84%9C-from-python/
+
+    [profile test-profile5]
+    output = json
+    region = ap-northeast-2
+    role_arn = YOUR_ROLE_ARN1 ; [ARN of Role with AssumeRole authority of STS service]
+    credential_source = Ec2InstanceMetadata
+
+    [profile test-profile6]
+    output = json
+    region = ap-northeast-2
+    role_arn = YOUR_ROLE_ARN2 ; [ARN of the role you want to create with AssumeRole]
+    source_profile  = test-profile5 # STS AssumeRole 권한은 test-profile5 에서 얻어오게 하는 설정이라고 함
+    role_session_name = NDS-session-1st
+
+    ~/.aws/config 에 있는 설정파일들을 이용하도록 할 것임
+    사용자에게는 aws-cli 설치와 aws configure --profile simpleboto3 명령어로 credential과 config를 설정할 수 있도록 함
+    role_arn 은 aws cli로 설정이 불가능함. 따라서 사용 설명서에 방법을 안내해야 할 것 같음
+    
+    '''
+
+    # ~/.aws/config 에 있는 설정으로 AssumeRole 호출
+    session = boto3.Session(profile_name='simpleboto3')
+
+    # STS 클라이언트 객체를 만들고 assume_role을 호출하여 임시 자격증명을 가져옴
+    # Role Arn도 어디선가 입력을 받아야 함. 설정파일을 이용해야 할 것 같음
+    try:
+        sts_client = session.client('sts')
+        assumeRoleObject = sts_client.assume_role(
+            RoleArn='',
+            # 역할 신뢰 정책에서 RoleSessionName 키를 사용하여 사용자가 역할을 수임할 때 특정 세션 이름을 지정하도록 요구할 수 있습니다.
+            # 예를 들어 IAM 사용자가 자신의 사용자 이름을 세션 이름으로 지정하도록 요구할 수 있습니다.
+            # IAM 사용자가 역할을 수임하면 사용자 이름과 일치하는 세션 이름과 함께 AWS CloudTrail 로그에 활동이 나타납니다. 
+            # 이렇게 하면 여러 보안 주체가 한 역할을 사용할 때 관리자가 역할 세션 간을 구분하는 것이 쉬워집니다.
+            # 다만 아래와 같이 aws:username 조건 변수를 사용하면 임시 자격 증명을 사용하는 사용자가 역할을 수임할 수 없음. username 변수는 IAM 사용자에게만 사용되기 때문
+            # {
+            #     "Version": "2012-10-17",
+            #     "Statement": [
+            #         {
+            #             "Sid": "RoleTrustPolicyRequireUsernameForSessionName",
+            #             "Effect": "Allow",
+            #             "Action": "sts:AssumeRole",
+            #             "Principal": {"AWS": "arn:aws:iam::111122223333:root"},
+            #             "Condition": {
+            #                 "StringLike": {"sts:RoleSessionName": "${aws:username}"}
+            #             }
+            #         }
+            #     ]
+            # }
+            RoleSessionName=''
+        )
+    except botocore.exceptions.ClientError as err:
+        if err.response['Error']['Code'] == 'AuthFailure':
+            print("AWS 자격증명에 문제가 있습니다. config.yaml 파일의 ACCESS_KEY와 SECRET_KEY를 확인해주시기 바랍니다.")
+            return None
+        else:
+            return None
+    credentials = assumeRoleObject['Credentials']
+    # print(credentials)
+
+    # 임시 자격증명을 이용하여 새로운 세션을 연결
+    newSession = boto3.Session(
+        aws_access_key_id=credentials['AccessKeyId'],
+        aws_secret_access_key=credentials['SecretAccessKey'],
+        aws_session_token=credentials['SessionToken']
+    )
+
+    # 새로운 세션이 문제없이 동작하는지 테스트
+    try:
+        ec2_client = session.client('ec2')
+        CredentialTest = ec2_client.create_vpc(CidrBlock='10.0.0.0/16', DryRun=True)
+    except botocore.exceptions.ClientError as err:
+        if err.response['Error']['Code'] == 'AuthFailure':
+            print("AWS 자격증명에 문제가 있습니다. config.yaml 파일의 ACCESS_KEY와 SECRET_KEY를 확인해주시기 바랍니다.")
+            return None
+        elif err.response['Error']['Code'] == 'DryRunOperation':
+            pass
+        else: # DryRun으로 실행했기 때문에 반드시 except가 발생해야 함. 발생하지 않은 경우 문제가 있는 것으로 판단
+            return None
+
+    return newSession
+
+
 def main():
     if len(sys.argv) == 1:
         print("help 넣을 것")
@@ -103,6 +192,8 @@ def main():
         _parse(sys.argv[1:])
     
     simpleBoto3 = SimpleBoto3()
+
+    # 
 
     # print(sys.argv[0])
     # file_path = sys.argv[1]
@@ -113,5 +204,6 @@ def main():
 
     # print("File path : " + file_path)
     
+
 if __name__ == "__main__":
     main()
