@@ -16,3 +16,76 @@
 이 프로그램에서 사용할 프로파일 이름은 simpleBoto3 임
 role_arn은 직접 수정하도록 사용 가이드에 안내해야 함
 
+
+
+태그에 'simpleBoto3':'default' 여기서 value는 VPC 이름
+command 목록
+설정은 config에 저장
+./simpleBoto3.py get-current-vpc
+./simpleBoto3.py set-current-vpc VPC_NAME
+
+VPC
+./simpleBoto3.py get vpc                                                    # VPC들을 출력
+./simpleBoto3.py create vpc VPC_NAME                                        # VPC 생성
+./simpleBoto3.py describe vpc VPC_NAME                                      # VPC 정보 출력
+
+Internet Gateway
+./simpleBoto3.py get igw
+./simpleBoto3.py create igw IGW_NAME
+./simpleBoto3.py delete igw IGW_NAME
+
+NAT Gateway
+./simpleBoto3.py get nat
+./simpleBoto3.py create nat NAT_NAME
+./simpleBoto3.py delete nat NAT_NAME
+
+Subnet
+# 라우트 테이블은 서브넷마다 하나씩 생성하고 각각 설정하는 것이 좋을 것 같음
+./simpleBoto3.py get subnet                                                 # subnet들을 출력 Name, cidr, 가용 영역
+./simpleBoto3.py describe subnet                                            # subnet 정보 출력
+./simpleBoto3.py create subnet SUBNET_NAME --cidr ''                        # subnet 생성, type은 public, private, nat 3개
+./simpleBoto3.py delete subnet SUBNET_NAME                                  # subnet 제거
+./simpleBoto3.py route SUBNET_NAME  --cidr ''                               # 서브넷에 연결된 Route Table에 규칙 추가
+                                    --to-igw IGW_NAME 
+                                    --to-nat NAT_NAME 
+                                    --to-internal
+
+Security Group
+# 보안 그룹도 그냥 EC2, 시작 템플릿 만들 때 하나씩 생성하고 각각 설정하면 좋을 것 같음
+# EC2나 시작 템플릿도 생성할 때 보안그룹 하나 같이 생성
+# 보안그룹 설정은 꼭 처음에 할 필요가 없기 때문에 순서는 상관없음
+./simpleBoto3.py allow ec2  --from-cidr '' 
+                            --from-ec2 EC2_NAME
+                            --from-launch-template LUANCH_TEMPLATE_NAME
+                            --tcp-port NUMBER
+                            --udp-port NUMBER
+
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
+./simpleBoto3.py 
