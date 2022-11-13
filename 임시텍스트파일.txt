@@ -1,0 +1,18 @@
+
+
+
+
+~/.aws/credentials 설정은 아래와 같이
+    $ aws configure --profile simpleBoto3
+
+~/.aws/config 설정은 직접 수정해서
+    [profile simpleboto3]
+    region = ap-northeast-2
+    output = json
+    role_arn = arn:aws:iam::999822656998:role/simpleBoto3_full_access
+    source_profile  = simpleboto3
+와 같이 수정
+
+이 프로그램에서 사용할 프로파일 이름은 simpleBoto3 임
+role_arn은 직접 수정하도록 사용 가이드에 안내해야 함
+
