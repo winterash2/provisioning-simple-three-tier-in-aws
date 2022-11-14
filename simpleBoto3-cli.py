@@ -54,8 +54,17 @@ def main():
     else:
         _parse(sys.argv[1:])
     
-    simpleBoto3 = SimpleBoto3()
-    _get_sts_session()
+    session = _get_sts_session()
+    simpleBoto3 = SimpleBoto3(session)
+
+    '''
+    VPC
+    ./simpleBoto3.py get vpc                                                    # VPC들을 출력
+    ./simpleBoto3.py create vpc VPC_NAME                                        # VPC 생성
+    ./simpleBoto3.py describe vpc VPC_NAME                                      # VPC 정보 출력
+    '''
+    simpleBoto3.create_vpc()
+    
     # 
 
     # print(sys.argv[0])

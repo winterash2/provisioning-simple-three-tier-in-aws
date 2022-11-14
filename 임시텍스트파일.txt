@@ -60,6 +60,15 @@ Security Group
                             --tcp-port NUMBER
                             --udp-port NUMBER
 
+Launch template
+# apache인지 tomcat인지 등에 따라 user_data를 미리 정의해놓고 붙이는 방식으로 해도 될 듯
+# Code Deploy에서 아티팩트를 배포할 수 있도록 에이전트 설치하는 건 넣어야 함
+
+RDS
+# 보안 그룹 하나 새로 생성해서 만들기
+# 상태 확인하는거 꼭 넣어야 함
+
+
 ./simpleBoto3.py 
 ./simpleBoto3.py 
 ./simpleBoto3.py 

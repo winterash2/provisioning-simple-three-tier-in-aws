@@ -16,11 +16,11 @@ from simpleboto3.securitygroup import SecurityGroup
 # 모든 자원의 {'Name' : } 태그를 전부 지정해줌으로써 
 class SimpleBoto3:
     # Kubernets 처럼 namespace별로 작업. 해당 네임스페이스 내의 모든 자원은 'simpleBoto3':'namespace' 태그를 추가할 것임
-    _namespace = 'default'
+    _vpcName = 'default'
 
     @property
-    def namespace(self):
-        return self._namespace
+    def vpcName(self):
+        return self._vpcName
 
     # myboto3에서와 같이 일일히 boto3Interfaces=boto3Interfaces 와 같이 파라미터를 넘기는 것을 
     # 없애기 위해 SimpleBoto3 라는 클래스로 한 번 더 묶고 여기에서 session이나 client 등을 관리
@@ -50,25 +50,34 @@ class SimpleBoto3:
     _subnets = {} # Subnet 클래스들 보관
     _securityGroups = {} # SecurityGroup 클래스들 보관
     
-    def __init__(self, session, namespace='default'):
+    def __init__(self, session, vpcName='default'):
         # session, 각종 client들 생성하여 내부 변수에 저장
         self._session = session
-        self._namespace = namespace
+        self._vpcName = vpcName
         self._ec2_client = session.client('ec2')
         self._ec2_resource = session.resource('ec2')
 
-        vpc_id = get_vpc_id_from_namespace(namespace=self.namespace)
         self._vpc = VPC()
-        if vpc_id == None:# VPC가 생성되어 있지 않은 경우
-            VPC.create_vpc(self)
-        else: # 만약 vpc가 생성되어 있는 경우
-            self._vpc.id = vpc_id
+        # vpc_id = get_vpc_id_from_vpcName(vpcName=self.vpcName)
         
+        # if vpc_id != None:# 만약 vpc가 생성되어 있는 경우
+        #     self._vpc.id = vpc_id
+        # # VPC가 생성되어 있지 않은 경우에는 
 
         # {'simpleBoto3' : name} 태그를 달고 있는 모든 자원을 AWS에서 조회한다.
         # 조회되는 것이 있으면 내부 변수들에 정보들을 넣는다
         # 이렇게 함으로써 여러 번 실행해도 작업들을 이어서 진행할 수 있도록 함
         print("Class SimpleBoto3")
+
+
+    def create_vpc(self):
+        # 먼저 해당이름의 VPC가 있는지부터 확인
+        self._vpc.get_vpc_id_from_vpcName(self, vpcName=self.vpcName)
+        if self._vpc.id != None: # VPC가 이미 있는 경우
+            print(self.vpcName, "이름의 VPC가 이미 생성되어 있습니다.")
+        else:
+            self._vpc = VPC(name=self._vpcName)
+            self._vpc.create_vpc(simpleBoto3=self, cidrBlock = '10.0.0.0/16')
 
 
     def describe_vpc(self):
