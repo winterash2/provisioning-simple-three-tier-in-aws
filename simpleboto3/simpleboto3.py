@@ -42,14 +42,15 @@ class SimpleBoto3:
     @property
     def ec2_resource(self):
         return self._ec2_resource
+    
 
-
-    # 모든 자원을 simpleBoto3 라는 객체에서 전부 가지고 있음으로써 사용을 편리하게 함
+    # {'simpleBoto3' : name} 태그를 달고 있는 모든 자원을 simpleBoto3 라는 객체에서 전부 가지고 있음으로써 사용을 편리하게 함
     # 자원의 사용은 전부 Name으로 할 수 있도록 함
     _vpc = None # VPC 클래스 보관
     _subnets = {} # Subnet 클래스들 보관
     _securityGroups = {} # SecurityGroup 클래스들 보관
     
+
     def __init__(self, session, vpcName='default'):
         # session, 각종 client들 생성하여 내부 변수에 저장
         self._session = session
@@ -57,27 +58,15 @@ class SimpleBoto3:
         self._ec2_client = session.client('ec2')
         self._ec2_resource = session.resource('ec2')
 
-        self._vpc = VPC()
-        # vpc_id = get_vpc_id_from_vpcName(vpcName=self.vpcName)
-        
-        # if vpc_id != None:# 만약 vpc가 생성되어 있는 경우
-        #     self._vpc.id = vpc_id
-        # # VPC가 생성되어 있지 않은 경우에는 
-
-        # {'simpleBoto3' : name} 태그를 달고 있는 모든 자원을 AWS에서 조회한다.
-        # 조회되는 것이 있으면 내부 변수들에 정보들을 넣는다
-        # 이렇게 함으로써 여러 번 실행해도 작업들을 이어서 진행할 수 있도록 함
-        print("Class SimpleBoto3")
-
 
     def create_vpc(self):
+        self._vpc = VPC(simpleBoto3=self ,name=self._vpcName)
         # 먼저 해당이름의 VPC가 있는지부터 확인
-        self._vpc.get_vpc_id_from_vpcName(self, vpcName=self.vpcName)
+        self._vpc.id = self._vpc.get_vpc_id_from_vpcName(self, vpcName=self.vpcName)
         if self._vpc.id != None: # VPC가 이미 있는 경우
             print(self.vpcName, "이름의 VPC가 이미 생성되어 있습니다.")
         else:
-            self._vpc = VPC(name=self._vpcName)
-            self._vpc.create_vpc(simpleBoto3=self, cidrBlock = '10.0.0.0/16')
+            self._vpc.create_vpc(cidrBlock = '10.0.0.0/16')
 
 
     def describe_vpc(self):

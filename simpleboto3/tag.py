@@ -2,7 +2,7 @@
 
 def ec2_create_tag(simpleBoto3, resource, key, value):
     try:
-        response = simpleBoto3._ec2_client.create_tags(
+        response = simpleBoto3.ec2_client.create_tags(
             Resources=[
                 resource.id,
             ],

@@ -50,7 +50,7 @@ def _get_sts_session():
 
 def main():
     if len(sys.argv) == 1:
-        print("help 넣을 것")
+        pass # help 넣을 것
     else:
         _parse(sys.argv[1:])
     
@@ -64,6 +64,7 @@ def main():
     ./simpleBoto3.py describe vpc VPC_NAME                                      # VPC 정보 출력
     '''
     simpleBoto3.create_vpc()
+    
     
     # 
 

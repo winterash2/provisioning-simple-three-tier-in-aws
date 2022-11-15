@@ -3,9 +3,13 @@ import botocore
 import boto3
 import time
 from simpleboto3.tag import *
+from pprint import pprint
 
 class VPC:
-    # VPC ID
+    # session이나 각종 유지해야 하는 값들때문에 각 클래스에서 simpleBoto3를 가지고 있게 하려고 함
+    _simpleBoto3 = None # simpleBoto3
+
+    # VPC 이름, ID
     _name = None
     _id = None
 
@@ -17,10 +21,15 @@ class VPC:
     def id(self, value):
         self._id = value
 
+    @property
+    def simpleBoto3(self):
+        return self._simpleBoto3
+
 
     # 클래스 생성 시 호출되는 초기화 함수, boto3Interfaces를 통해 미리 생성한 ec2_clinet를 전달받음
-    def __init__(self, name):
-        _name = name
+    def __init__(self, simpleBoto3, name):
+        self._simpleBoto3 = simpleBoto3
+        self._name = name
 
 
     def delete_vpc(self):
@@ -52,10 +61,10 @@ class VPC:
         print("VPC를 정상적으로 제거하였습니다.")
 
 
-    def create_vpc(self, simpleBoto3, cidrBlock = '10.0.0.0/16'):
+    def create_vpc(self, cidrBlock = '10.0.0.0/16'):
         # VPC 생성
         try:
-            response = simpleBoto3.ec2_resource.create_vpc(
+            response = self.simpleBoto3.ec2_resource.create_vpc(
                 CidrBlock = cidrBlock,
             )
             self._id = response.id
@@ -64,8 +73,8 @@ class VPC:
             raise
         # VPC 생성 후 vpcName 태그 생성. 문제 발생 시 VPC도 제거
         try:
-            ec2_create_tag(simpleBoto3=simpleBoto3, resource=self, key='simpleBoto3', value=simpleBoto3.vpcName)
-            ec2_create_tag(simpleBoto3=simpleBoto3, resource=self, key='Name', value=simpleBoto3.vpcName)
+            ec2_create_tag(simpleBoto3=self.simpleBoto3, resource=self, key='simpleBoto3', value=self._name)
+            ec2_create_tag(simpleBoto3=self.simpleBoto3, resource=self, key='Name', value=self._name)
         except Exception as err:
             print("VPC에 Tag 생성 중 알 수 없는 에러가 발생하였습니다.")
             self.delete_vpc()
@@ -83,8 +92,9 @@ class VPC:
         
         # 만약 vpc가 이미 생성되어 있는 경우
         if len(response['Vpcs']) == 1:
-            self._vpc = VPC.id = response['Vpcs'][0]['VpcId']
+            self.id = VPC.id = response['Vpcs'][0]['VpcId']
+            return self.id
         elif len(response['Vpcs']) == 0: # VPC가 없는 경우
             return None
-        else: # 같은 vpcName에 여러 vpc가 있는 경우
-            raise Exception("같은 네임스페이스에 여러 VPC가 존재합니다.")
+        else: # 같은 이름의 여러 vpc가 있는 경우
+            raise Exception("같은 이름(", vpcName,")의 여러 VPC가 존재합니다.")
